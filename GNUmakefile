@@ -47,9 +47,12 @@ else
 TAG                                    :=$(tag)
 endif
 
-.PHONY:-
--:help
-##      make  help: prints this help message
+PACKAGE_PREFIX                         := ghcr.io
+export PACKAGE_PREFIX
+.PHONY: - all
+-: help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?##/ {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
 .PHONY: help
 help:
 	@echo "Usage: make [arg]"
@@ -81,3 +84,16 @@ report:
 	@echo '        - NOCACHE=${NOCACHE}'
 	@echo '        - VERBOSE=${VERBOSE}'
 	@echo ''
+#######################
+docs: init
+	echo "## MAKE COMMAND" >> MAKE.md
+	echo '```' > MAKE.md
+	make help >> MAKE.md
+	echo '```' >> MAKE.md
+.PHONY: run
+run: docs init## 	docker-compose up -d
+	$(DOCKER_COMPOSE) $(VERBOSE) $(NOCACHE) up -d
+#######################
+.PHONY: build
+build: init
+	$(DOCKER_COMPOSE) $(VERBOSE) build --pull $(PARALLEL) --no-rm $(NOCACHE)
